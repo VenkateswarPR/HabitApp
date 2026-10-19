@@ -1,3 +1,4 @@
+
 pipeline {
     agent any
 
@@ -17,12 +18,28 @@ pipeline {
             steps {
                 sh 'mvn -B clean verify'
             }
-            post {
-                always {
-                    junit 'target/surefire-reports/*.xml'
-                    archiveArtifacts artifacts: 'target/*.jar', fingerprint: true, allowEmptyArchive: true
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh '''
+                        mvn -B sonar:sonar \
+                          -Dsonar.projectKey=habit-tracker
+                    '''
                 }
             }
+        }
+    }
+
+    post {
+        always {
+            junit allowEmptyResults: true,
+                  testResults: 'target/surefire-reports/*.xml'
+
+            archiveArtifacts artifacts: 'target/*.jar',
+                             fingerprint: true,
+                             allowEmptyArchive: true
         }
     }
 }
